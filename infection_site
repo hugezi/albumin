@@ -1,0 +1,106 @@
+WITH sepsis AS
+(
+  select isd.subject_id,isd.hadm_id,isd.stay_id,isd.gender,isd.dod,isd.hospital_expire_flag,
+isd.admittime,isd.dischtime,isd.los_hospital,isd.admission_age,
+isd.race,isd.icu_intime,isd.icu_outtime,isd.los_icu,isd.icustay_seq,
+sepsis3.antibiotic_time,sepsis3.culture_time,sepsis3.suspected_infection_time,
+sepsis3.sofa_time,sepsis3.sofa_score,sepsis3.respiration,sepsis3.coagulation,sepsis3.liver,sepsis3.cardiovascular,
+sepsis3.cns,sepsis3.renal from `physionet-data.mimiciv_derived.icustay_detail`isd
+right join `physionet-data.mimiciv_derived.sepsis3`sepsis3 on isd.stay_id=sepsis3.stay_id
+where isd.icustay_seq=1
+),
+infectionsite as
+(
+select subject_id,hadm_id,max(Septicemia) as Septicemia,max(Heart_infection) as Heart_infection,
+max(Peritoneal_infection) as Peritoneal_infection,max(lung_infection) as lung_infection,
+max(fungal_infection) as fungal_infection,max(Bacteremia) as Bacteremia,
+max(cns_infection) as cns_infection,max(Genitourinary_infection) as Genitourinary_infection,
+max(soft_tissue_infection) as soft_tissue_infection, max(Gastrointestinal_infection) as Gastrointestinal_infection,
+max(upper_respiratory_infection) as upper_respiratory_infection from
+(select dia_icd.subject_id,dia_icd.hadm_id,
+case when icd_version=9 and icd_code in ("038","78552","99592") then 1
+     when icd_version=10 and icd_code in ("A409","A412","A4101","A4102","A411","A403","A414","A4150","A413",
+     "A4151","A4152","A4153","A4159","A4189","A419","R6521","R6520") then 1
+     else 0 end as Septicemia,
+case when icd_version=9 and icd_code in ("420","421") then 1
+     when icd_version=10 and icd_code in ("I32","I309","I300","I308","I330","I39","I339") then 1
+     else 0 end as Heart_infection,
+case when icd_version=9 and icd_code in ("00845","567","56983") then 1
+     when icd_version=10 and icd_code in ("A0471","A0472","K67","K658","K650","K651","K652","K650","K6812","K6819","K689","K653","K654",
+     "K658","K631") then 1
+     else 0 end as Peritoneal_infection,
+case when icd_version=9 and icd_code in ("010","011","012","0310","481","482","485","486") then 1
+     when icd_version=10 and icd_code in ("A157","A156","A155","A154","A158","A310","A311","A312","A318","A319","J13","J181","J150",
+     "J151","J14","J154","J153","J1520","J15211","J15212","J1529","J158","J155","J156","A481","J180","J189") then 1
+     else 0 end as lung_infection,
+case when icd_version=9 and icd_code in ("1120","1124","1125","114","115","116","117","118") then 1
+     when icd_version=10 and icd_code in ("B370","B3783","B371","B377","B380","B383","B384","B3889","B381","B382","B389","B394","G02","H32",
+     "B392","B393","B395","J17","B399","B409","B410","B419","B480","B481","B420","B421","B427","B429","B439","B449","B470",
+     "B450","B457","B459","B482","B469","B488","B49") then 1
+     else 0 end as fungal_infection,
+case when icd_version=9 and icd_code in ("018","0312","7907") then 1
+     when icd_version=10 and icd_code in ("A192","A198","A199","R7881") then 1
+     else 0 end as Bacteremia,   
+case when icd_version=9 and icd_code in ("013","036","094","320","322","325","3240","3241","3249") then 1
+     when icd_version=10 and icd_code in ("A170","A171","A1781","A1782","A1789","A179","A390","A3981","A5211","A5213","A5214","A5219",
+     "A523", "G000", "G001", "G002","G003","G01","G008","G009","G042","G030","G038","G031","G039","G08","G060","G061","G062") then 1
+     else 0 end as cns_infection,
+case when icd_version=9 and icd_code in ("016","098","590","597","5990","601","614","615","616") then 1
+     when icd_version=10 and icd_code in ("A1811”,”A1810”,”A1812”,”A1813”,”A1815”,”A1814”,”A1817”,”A1816”,”A1818”,”A5400”,”A5429”,”A5401",
+"A5422”,”A5423”,”A5403”,”A5424”,”A5421”,”A5442”,”N110”,”N151”,”N340”,”N341”,”N342”,”N343”,”N390",
+"N410”,”N411”,”N412”,”N413”,”N51”,”N414”,”N418”,”N419”,”N7001”,”N7002”,”N7003”,”N7011”,”N7012",
+"N7013”,”N7091”,”N7092”,”N7093”,”N730”,”N731”,”N732”,”N733”,”N736”,”N734”,”N738”,”N739”,”N710",
+"N711”,”N719”,”N72”,”N760”,”N761”,”N762”,”N763”,”N771”,”N750”,”N751”,”N764”,”N766”,”N770”,”N7681","N759”,”N765”,”N7689") then 1
+     else 0 end as Genitourinary_infection,
+case when icd_version=9 and icd_code in ("015”,”017”,”0311”,”035","451”,”110”,”111”,”1123","681","682","683","686","7110","730") then 1
+     when icd_version=10 and icd_code in ("A1801”,”A1802”,”A1803”,”A5431”,”A5432”,”A5439”,”A5433”,”A5449”,”A5441”,”A5440”,”A545”,”A46",
+     "I8000”,”I8010”,”I80209”,”I803”,”I80219”,”I808”,”I809”,”B350”,”B351”,”B352”,”B356”,”B353”,”B354”,”B355",
+     "B358","B359","B360","B361","B362","B363","B368","B369","B372","L03019","L03029","L03039",
+     "L03049","K122","L03211","L03212","L03213","L03221","L03222","L03319","L03329","L03129","L03119",
+     "L03317","L03811”,”L03818”,”L03891”,”L03898”,”L0390”,”L0391”,”L049”,”L080”,”L88”,”L0889”,”L980”,”L089",
+     "M0000”,”M0010”,”M0020”,”M0080”,”M009”,”M00019”,”M00219”,”M00819”,”M00029”,”M00129","M00229","M00829","M00039","M00139","M00239",
+     "M00839","M00049","M00149","M00249","M00849","M00059","M00159","M00259","M00859","M00069","M00169","M00269","M00869","M00079",
+     "M00179","M00279","M00879","M0008","M0018","M0028","M0088","M0009","M0019","M0029","M0089","M8610","M8620","M86119","M86219","M86129",
+     "M86229","M86139","M86239","M86149,M86249,M86159","M86259","M86169","M86269","M86179","M86279","M8618","M8628","M8619","M8629",
+     "M8660","M86619","M86629","M86639","M86642","M86659","M86669","M86679","M8668","M8669","M869","M4620","M8960","M89619","M89629",
+     "M89639","M89649","M89659","M89669","M89679","M8968","M8969","M9080","M90819","M90829","M90839","M90849","M90859","M90869","M90879",
+     "M9088","M9089","M4630") then 1
+     else 0 end as soft_tissue_infection,
+case when icd_version=9 and icd_code in ("003","014","540","541","542", "56201","56203","56211","56213","566","5695","5720",
+      "5721", "5750") then 1
+     when icd_version=10 and icd_code in ("A020","A0220","A0229","A028","A029","A1831","A1832","A1839","K352","K353","K3580","K3589","K37",
+     "K36", "K5712", "K5713","K5732","K5733", "K610", "K611", "K613", "K630","K750","K751", "K810") then 1
+     else 0 end as Gastrointestinal_infection,
+case when icd_version=9 and icd_code in ("461","462","463","464","465") then 1
+     when icd_version=10 and icd_code in ("J0100","J0110”,”J0120”,”J0130”,”J0140”,”J0190”,”J029”,”J0390”,”J040”,”J050”,”J0410”,”J0411”,”J042",
+     "J0510”,”J0511”,”J0430”,”J0431”,”J060”,”J069”,”A000”,”A001”,”A009”,”A0100”,”A011",
+     "A012”,”A013”,”A014”,”A030”,”A031”,”A032”,”A033”,”A038”,”A039”,”A050”,”A051”,”A052”,”A058”,”A053",
+     "A055”,”A054”,”A059”,”A044”,”A040”,”A041”,”A042”,”A043”,”A048”,”A045”,”A046”,”A049”,”A080”,”A082",
+     "A0811”,”A0819”,”A0831”,”A0832”,”A0839”,”A088”,”A09”,”A200”,”A201”,”A207”,”A202”,”A208”,”A209",
+     "A210”,”A213”,”A212”,”A211”,”A217”,”A218”,”A219”,”A220”,”A221”,”A222”,”A227”,”A228”,”A229”,”A230",
+     "A231”,”A232”,”A233”,”A238”,”A239”,”A240”,”A243”,”A249”,”A250”,”A251”,”A259”,”A3211”,”A3212”,”A327",
+     "A3281”,”A3289”,”A329”,”A267”,”A268”,”A269”,”A280”,”A288”,”A289”,”A360”,”A361”,”A3689”,”A362",
+     "A3686”,”A3681”,”A3685”,”A363”,”A3682”,”A3683”,”A3684”,”A369”,”A3700”,”A3710”,”A3780”,”A3790",
+     "L081”,”A420”,”A421”,”A422”,”B479”,”A4281”,”A4282”,”A4289”,”A438”,”A429”,”A439”,”B471”,”A480",
+     "A488”,”K9081”,”A4851”,”A4852”,”M60009”,”A483”,”B955”,”B950”,”B951”,”B954”,”B952”,”B958”,”B9561",
+     "B9562”,”B957”,”B953”,”B961”,”B9621”,”B9622”,”B9623”,”B9620”,”B9629”,”B963”,”B964”,”B965”,”A493",
+     "B960”,”B966”,”B967”,”B9689”,”B9681”,”A5009”,”A501”,”A502”,”A5031”,”A5040”,”A5045”,”A5042",
+     "A5041”,”A5049”,”A5052”,”A5057”,”A5059”,”A506”,”A507”,”A509”,”A510”,”A511”,”A512”,”A5131”,”A5139",
+     "A5149”,”A5143”,”A5146”,”A5145”,”A5141”,”A5132”,”A515”,”A5201”,”A5202”,”A5203”,”A5206”,”A5209",
+     "A5200”,”A5271”,”A5272”,”A5274”,”A5275”,”A5277”,”A5278”,”A5273”,”A5276”,”A5279”,”A528”,”A529",
+     "A530”,”A539”,”A270”,”A2781”,”A2789”,”A279”,”A690”,”A691”,”A660”,”A661”,”A662”,”A663”,”A664”,”A665",
+     "A666”,”A667”,”A668”,”A669”,”A670”,”A671”,”A672”,”A673”,”A679”,”A65”,”A698”,”A699”,”J441”,”J479",
+     "J471”,”J860”,”J869”,”J850”,”J851”,”J852”,”J853”,”T8579XA”,”T826XXA”,”T827XXA”,”T85730A",
+     "T85731A”,”T85732A”,”T85733A”,”T85734A”,”T85735A”,”T85738A”,”T83510A”,”T83511A”,”T83512A",
+     "T83518A”,”T83590A”,”T83591A”,”T83592A”,”T83593A”,”T83598A”,”T8361XA”,”T8362XA”,”T8369XA",
+     "T8450XA”,”T8460XA”,”T847XXA”,”T8571XA”,”T814XXA”,”K6811”,”T80219A”,”T80211A”,”T80212A","T8022XA”,”T8029XA”,”T880XXA") then 1
+     else 0 end as upper_respiratory_infection
+from `physionet-data.mimiciv_hosp.diagnoses_icd` dia_icd)infection_site
+group by subject_id,hadm_id
+)
+select sepsis.*,infectionsite.Septicemia,infectionsite.Heart_infection,infectionsite.Peritoneal_infection,
+infectionsite.lung_infection,infectionsite.fungal_infection,infectionsite.Bacteremia,infectionsite.cns_infection,
+infectionsite.Genitourinary_infection,infectionsite.soft_tissue_infection, infectionsite.Gastrointestinal_infection,
+infectionsite.upper_respiratory_infection from sepsis
+left join infectionsite
+on sepsis.hadm_id=infectionsite.hadm_id
